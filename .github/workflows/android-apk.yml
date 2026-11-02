@@ -60,7 +60,7 @@ jobs:
           flutter build apk --debug --verbose > build-output.log 2>&1
           result=$?
           if [ "$result" -ne 0 ]; then
-            diagnostics="$(grep -n -A 35 -B 3 -E 'What went wrong:|Execution failed for task|A problem occurred|Could not resolve|Could not find|requires .*compileSdk|^FAILURE:|error:' build-output.log | tail -n 160 || true)"
+            diagnostics="$(grep -n -A 80 -B 3 -E 'What went wrong:|Caused by:|Execution failed for task|A problem occurred|Could not resolve|Could not find|requires .*compileSdk|^FAILURE:|error:' build-output.log | tail -n 240 || true)"
             if [ -z "$diagnostics" ]; then
               diagnostics="$(tail -n 120 build-output.log)"
             fi
