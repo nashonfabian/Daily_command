@@ -60,11 +60,15 @@ jobs:
           flutter build apk --debug --verbose > build-output.log 2>&1
           result=$?
           if [ "$result" -ne 0 ]; then
-            tail -n 120 build-output.log
+            diagnostics="$(grep -n -A 35 -B 3 -E 'What went wrong:|Execution failed for task|A problem occurred|Could not resolve|Could not find|requires .*compileSdk|^FAILURE:|error:' build-output.log | tail -n 160 || true)"
+            if [ -z "$diagnostics" ]; then
+              diagnostics="$(tail -n 120 build-output.log)"
+            fi
+            printf '%s\n' "$diagnostics"
             {
-              echo '### Android build failure (last 120 log lines)'
+              echo '### Android build failure details'
               echo '```text'
-              tail -n 120 build-output.log
+              printf '%s\n' "$diagnostics"
               echo '```'
             } >> "$GITHUB_STEP_SUMMARY"
           fi
