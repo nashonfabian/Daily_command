@@ -25,6 +25,9 @@ flutter build apk --release
 Run `flutter analyze` and `flutter test` before building. Android builds require
 an installed Android SDK and configured Flutter Android toolchain.
 
+Pushing to `main` runs the Android debug APK workflow. Download the generated
+APK from the workflow run's `daily-command-debug-apk` artifact.
+
 The current Android release build type uses the debug signing configuration
 for local build verification. Configure a production keystore before
 distributing a release APK.
