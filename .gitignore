@@ -1,0 +1,17 @@
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+.pub-cache/
+build/
+
+android/.gradle/
+android/local.properties
+android/app/.cxx/
+android/key.properties
+*.jks
+*.keystore
+
+.env
+.env.*
+!.env.example
