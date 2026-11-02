@@ -35,7 +35,7 @@ jobs:
             exit 1
           fi
           echo "$sdk_root/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
-          "$sdkmanager" --sdk_root="$sdk_root" --install "platforms;android-34" "build-tools;33.0.1"
+          "$sdkmanager" --sdk_root="$sdk_root" --install "platforms;android-35" "build-tools;35.0.0"
 
       - name: Set up Flutter
         uses: subosito/flutter-action@v2

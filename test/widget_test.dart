@@ -13,6 +13,7 @@ import 'package:daily_command/features/notification_service.dart';
 import 'package:daily_command/features/stopwatch_service.dart';
 import 'package:daily_command/shared/date_time_utils.dart';
 import 'package:daily_command/shared/models.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:path/path.dart' as path_util;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite/sqflite.dart' as sqflite;
@@ -30,6 +31,7 @@ void main() {
   setUpAll(() async {
     sqfliteFfiInit();
     sqflite.databaseFactory = databaseFactoryFfi;
+    AndroidFlutterLocalNotificationsPlugin.registerWith();
     SharedPreferences.setMockInitialValues({});
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockMethodCallHandler(_notificationsChannel, (call) async {
