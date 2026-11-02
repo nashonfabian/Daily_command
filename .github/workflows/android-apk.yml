@@ -38,7 +38,21 @@ jobs:
         run: flutter test
 
       - name: Build debug APK
-        run: flutter build apk --debug
+        shell: bash
+        run: |
+          set +e
+          flutter build apk --debug --verbose > build-output.log 2>&1
+          result=$?
+          if [ "$result" -ne 0 ]; then
+            tail -n 120 build-output.log
+            {
+              echo '### Android build failure (last 120 log lines)'
+              echo '```text'
+              tail -n 120 build-output.log
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+          exit "$result"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -46,3 +60,11 @@ jobs:
           name: daily-command-debug-apk
           path: build/app/outputs/flutter-apk/app-debug.apk
           if-no-files-found: error
+
+      - name: Upload Android build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: android-build-log
+          path: build-output.log
+          if-no-files-found: ignore
