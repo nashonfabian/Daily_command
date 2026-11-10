@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:daily_command/app.dart';
 import 'package:daily_command/database/database_helper.dart';
 import 'package:daily_command/database/migrations.dart';
+import 'package:daily_command/features/activities_screen.dart';
 import 'package:daily_command/features/activity_repository.dart';
 import 'package:daily_command/features/daily_plan_repository.dart';
 import 'package:daily_command/features/daily_review_service.dart';
@@ -488,6 +489,41 @@ void main() {
 
     await upgradedDb.close();
     await directory.delete(recursive: true);
+  });
+
+  testWidgets('saving an activity closes the form and refreshes the list', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    await tester.runAsync(() => DatabaseHelper.database);
+    await tester.pumpWidget(
+      const MaterialApp(home: ActivitiesScreen()),
+    );
+    for (var attempt = 0;
+        attempt < 10 && find.byType(FloatingActionButton).evaluate().isEmpty;
+        attempt++) {
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 50)),
+      );
+      await tester.pump();
+    }
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextFormField).first, 'Saved activity');
+    await tester.tap(find.text('CREATE'));
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 300)),
+    );
+    await tester.pump(const Duration(milliseconds: 500));
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('Saved activity'), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('app opens and navigates between its three destinations', (

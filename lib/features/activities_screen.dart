@@ -61,7 +61,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         categoryController.text.trim() == 'Rest & Recreation';
     var nudgeExplicitlySet = existing != null;
 
-    await showModalBottomSheet<void>(
+    final saved = await showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
       builder: (sheetContext) => Padding(
@@ -197,8 +197,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
                         await _repo.update(activity);
                       }
                       if (!sheetContext.mounted) return;
-                      Navigator.pop(sheetContext);
-                      await _load();
+                      Navigator.pop(sheetContext, true);
                     },
                   ),
                   const SizedBox(height: 24),
@@ -209,6 +208,7 @@ class _ActivitiesScreenState extends State<ActivitiesScreen> {
         ),
       ),
     );
+    if (saved == true && mounted) await _load();
     nameController.dispose();
     descriptionController.dispose();
     categoryController.dispose();
