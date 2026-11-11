@@ -10,6 +10,7 @@ import 'package:daily_command/features/activities_screen.dart';
 import 'package:daily_command/features/activity_repository.dart';
 import 'package:daily_command/features/daily_plan_repository.dart';
 import 'package:daily_command/features/daily_review_service.dart';
+import 'package:daily_command/features/history_repository.dart';
 import 'package:daily_command/features/notification_service.dart';
 import 'package:daily_command/features/stopwatch_service.dart';
 import 'package:daily_command/shared/date_time_utils.dart';
@@ -153,6 +154,51 @@ void main() {
     expect((await activityRepository.getAll()).single.name, 'Updated research');
   });
 
+  test('history reads planned items and sessions without creating past plans',
+      () async {
+    final database = await DatabaseHelper.database;
+    final activityRepository = ActivityRepository();
+    final planRepository = DailyPlanRepository();
+    final historyRepository = HistoryRepository();
+    const date = '2031-02-02';
+    final now = DateTime.now().toUtc().toIso8601String();
+    final activity = await activityRepository.create(
+      Activity(name: 'Planned record', createdAt: now, updatedAt: now),
+    );
+    final plan = await planRepository.getOrCreateForDate(date);
+    final removed = await planRepository.addActivityToPlan(
+      planId: plan.id!,
+      activity: activity,
+    );
+    final completed = await planRepository.addActivityToPlan(
+      planId: plan.id!,
+      activity: activity,
+    );
+    await planRepository.removeFromPlan(removed.id!);
+    await database.insert('activity_sessions', {
+      'daily_plan_activity_id': completed.id,
+      'started_at': '2031-02-02T09:00:00.000Z',
+      'ended_at': '2031-02-02T09:05:00.000Z',
+      'end_reason': 'finished',
+      'created_at': now,
+    });
+    await database.update(
+      'daily_plan_activities',
+      {'status': PlanItemStatus.completed.value},
+      where: 'id = ?',
+      whereArgs: [completed.id],
+    );
+
+    expect(await historyRepository.getDay('2031-02-01'), isNull);
+    final history = (await historyRepository.getDay(date))!;
+    expect(history.activities, hasLength(2));
+    expect(
+      history.activities.map((record) => record.item.status),
+      containsAll([PlanItemStatus.removed, PlanItemStatus.completed]),
+    );
+    expect(history.recordedDuration, const Duration(minutes: 5));
+  });
+
   test('concurrent creation returns one daily plan for a date', () async {
     final repository = DailyPlanRepository();
     final date = DateTimeUtils.todayLocalYYYYMMDD();
@@ -262,16 +308,30 @@ void main() {
       whereArgs: [first.id],
     );
     await planRepository.moveToDate(first.id!, '2031-02-06');
-    final movedItem = (await planRepository.getPlanItems(
+    final targetItems = await planRepository.getPlanItems(
       (await planRepository.getOrCreateForDate('2031-02-06')).id!,
-    ))
-        .single;
-    expect(movedItem.id, first.id);
+    );
+    final movedItem = targetItems.single;
+    expect(movedItem.id, isNot(first.id));
+    expect(
+      (await planRepository.getPlanItems(plan.id!))
+          .any((item) => item.id == first.id),
+      isTrue,
+    );
+    expect(movedItem.status, PlanItemStatus.paused);
     expect(
       await db.query(
         'activity_sessions',
         where: 'daily_plan_activity_id = ?',
         whereArgs: [movedItem.id],
+      ),
+      isEmpty,
+    );
+    expect(
+      await db.query(
+        'activity_sessions',
+        where: 'daily_plan_activity_id = ?',
+        whereArgs: [first.id],
       ),
       hasLength(oldSessions.length),
     );
@@ -526,7 +586,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('app opens and navigates between its three destinations', (
+  testWidgets('app opens and navigates between its four destinations', (
     tester,
   ) async {
     await tester.pumpWidget(const DailyCommandApp());
@@ -548,6 +608,14 @@ void main() {
     );
     await tester.pump();
     expect(find.text('Activities'), findsWidgets);
+
+    await tester.tap(find.text('History').last);
+    await tester.pump();
+    expect(find.text('History'), findsWidgets);
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 250)),
+    );
+    await tester.pump();
 
     await tester.tap(find.text('Settings').last);
     await tester.runAsync(

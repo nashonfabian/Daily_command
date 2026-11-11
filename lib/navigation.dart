@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'shared/app_navigation.dart';
 import 'features/my_day_screen.dart';
 import 'features/activities_screen.dart';
+import 'features/history_screen.dart';
 import 'features/settings_screen.dart';
 
 class MainNavigation extends StatefulWidget {
@@ -12,7 +13,12 @@ class MainNavigation extends StatefulWidget {
 
 class _MainNavigationState extends State<MainNavigation> {
   int _index = appNavigationIndex.value;
-  final _screens = const [MyDayScreen(), ActivitiesScreen(), SettingsScreen()];
+  final _screens = const [
+    MyDayScreen(),
+    ActivitiesScreen(),
+    HistoryScreen(),
+    SettingsScreen(),
+  ];
 
   @override
   void initState() {
@@ -31,16 +37,29 @@ class _MainNavigationState extends State<MainNavigation> {
   }
 
   @override
-  Widget build(BuildContext context){
+  Widget build(BuildContext context) {
     return Scaffold(
       body: _screens[_index],
       bottomNavigationBar: NavigationBar(
         selectedIndex: _index,
-        onDestinationSelected: (i)=>appNavigationIndex.value=i,
+        onDestinationSelected: (i) => appNavigationIndex.value = i,
         destinations: const [
-          NavigationDestination(icon: Icon(Icons.wb_sunny_outlined), selectedIcon: Icon(Icons.wb_sunny), label: 'My Day'),
-          NavigationDestination(icon: Icon(Icons.list_alt_outlined), selectedIcon: Icon(Icons.list_alt), label: 'Activities'),
-          NavigationDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: 'Settings'),
+          NavigationDestination(
+              icon: Icon(Icons.wb_sunny_outlined),
+              selectedIcon: Icon(Icons.wb_sunny),
+              label: 'My Day'),
+          NavigationDestination(
+              icon: Icon(Icons.list_alt_outlined),
+              selectedIcon: Icon(Icons.list_alt),
+              label: 'Activities'),
+          NavigationDestination(
+              icon: Icon(Icons.history),
+              selectedIcon: Icon(Icons.history),
+              label: 'History'),
+          NavigationDestination(
+              icon: Icon(Icons.settings_outlined),
+              selectedIcon: Icon(Icons.settings),
+              label: 'Settings'),
         ],
       ),
     );

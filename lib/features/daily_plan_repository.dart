@@ -232,13 +232,13 @@ class DailyPlanRepository {
         [targetPlan.id],
       );
       final maxOrder = (orderResult.first['max_order'] as int?) ?? -1;
-      final now = DateTimeUtils.nowUtcIso();
       final openSessions = await txn.query(
         'activity_sessions',
         columns: ['id'],
         where: 'daily_plan_activity_id = ? AND ended_at IS NULL',
         whereArgs: [itemId],
       );
+      final now = DateTimeUtils.nowUtcIso();
       for (final session in openSessions) {
         await txn.update(
           'activity_sessions',
@@ -248,26 +248,42 @@ class DailyPlanRepository {
         );
       }
 
-      final hasHistory = await txn.query(
+      final sessions = await txn.query(
         'activity_sessions',
         columns: ['id'],
         where: 'daily_plan_activity_id = ?',
         whereArgs: [itemId],
         limit: 1,
       );
-      await txn.update(
-        'daily_plan_activities',
-        {
-          'plan_id': targetPlan.id,
-          'display_order': maxOrder + 1,
-          'status': hasHistory.isEmpty
-              ? PlanItemStatus.notStarted.value
-              : PlanItemStatus.paused.value,
-          'updated_at': now,
-        },
-        where: 'id = ?',
-        whereArgs: [itemId],
-      );
+      if (openSessions.isNotEmpty) {
+        await txn.update(
+          'daily_plan_activities',
+          {
+            'status': PlanItemStatus.paused.value,
+            'updated_at': now,
+          },
+          where: 'id = ?',
+          whereArgs: [itemId],
+        );
+      }
+
+      await txn.insert('daily_plan_activities', {
+        'plan_id': targetPlan.id,
+        'activity_id': item.activityId,
+        'snapshot_name': item.snapshotName,
+        'snapshot_description': item.snapshotDescription,
+        'snapshot_category': item.snapshotCategory,
+        'display_order': maxOrder + 1,
+        'status': sessions.isEmpty
+            ? PlanItemStatus.notStarted.value
+            : PlanItemStatus.paused.value,
+        'estimated_minutes': item.estimatedMinutes,
+        'importance': item.importance,
+        'intent': null,
+        'notes': null,
+        'created_at': now,
+        'updated_at': now,
+      });
     });
   }
 }
